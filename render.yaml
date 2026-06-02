@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: internet-business-analysis-copilot
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: npm ci && npm run build
+    startCommand: npx next start -H 0.0.0.0 -p $PORT
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ENABLE_MOCK_MODE
+        value: "true"
+      - key: FINANCIAL_DATA_PROVIDER
+        value: mock
+      - key: SEARCH_CACHE_TTL_SECONDS
+        value: "1800"
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "60000"
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "12"
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: BOCHA_API_KEY
+        sync: false
+      - key: FINANCIAL_API_KEY
+        sync: false
