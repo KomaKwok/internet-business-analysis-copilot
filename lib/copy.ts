@@ -85,7 +85,7 @@ const copy: Record<Locale, CopyShape> = {
       applied: "Applied"
     },
     home: {
-      badge: "Portfolio project",
+      badge: "Business analysis platform",
       title: "Internet Business Analysis Copilot",
       intro:
         "Analyze internet companies through the operating logic that actually matters: users, use cases, monetization, KPI formulas, competitive pressure, valuation sensitivity, and management questions.",
@@ -94,7 +94,7 @@ const copy: Record<Locale, CopyShape> = {
       cardBodies: [
         "Breaks revenue into the true economic drivers: users, ARPU, GMV, take rate, ad load, frequency, and retention.",
         "Benchmarks the company against peers on monetization structure, moat, weakness, and the one metric worth monitoring.",
-        "Links the narrative to a live operating model so you can talk about growth, margin, and strategic bottlenecks in one frame."
+        "Links the narrative to an operating model so growth, margin, and strategic bottlenecks can be judged in one frame."
       ],
       methodologyTitle: "Methodology",
       methodologyBody:
@@ -108,7 +108,7 @@ const copy: Record<Locale, CopyShape> = {
     methodology: {
       title: "Methodology",
       intro:
-        "This product is designed for analyst interviews, so the analysis is organized around the company's economic engine rather than a generic summary.",
+        "This product is designed for business analysis, so the output is organized around the company's economic engine rather than a generic summary.",
       sections: [
         {
           title: "User",
@@ -204,7 +204,7 @@ const copy: Record<Locale, CopyShape> = {
       applied: "已应用"
     },
     home: {
-      badge: "作品集项目",
+      badge: "商业分析平台",
       title: "互联网商业分析 Copilot",
       intro:
         "用真正决定结果的经营逻辑来分析互联网公司：用户是谁、需求是什么、怎么变现、关键 KPI 怎么拆、竞争压力来自哪里，以及估值对哪些经营变量最敏感。",
@@ -213,7 +213,7 @@ const copy: Record<Locale, CopyShape> = {
       cardBodies: [
         "把收入拆回真实驱动因子：用户数、ARPU、GMV、Take Rate、广告负载、频次和留存。",
         "把公司和竞对放到同一张表里比较：变现结构、护城河、弱点，以及最值得盯的经营指标。",
-        "把业务叙事和经营模型连起来，方便你在面试里同时讲增长、利润率和战略瓶颈。"
+        "把业务叙事和经营模型连起来，帮助判断增长、利润率和战略瓶颈是否匹配。"
       ],
       methodologyTitle: "方法框架",
       methodologyBody:
@@ -227,7 +227,7 @@ const copy: Record<Locale, CopyShape> = {
     methodology: {
       title: "方法框架",
       intro:
-        "这个产品面向商业分析 / 战略分析面试场景，所以核心不是泛泛公司介绍，而是把公司的经济引擎拆开讲清楚。",
+        "这个产品面向商业分析 / 投研判断场景，所以核心不是泛泛公司介绍，而是把公司的经济引擎拆开讲清楚。",
       sections: [
         {
           title: "用户",
