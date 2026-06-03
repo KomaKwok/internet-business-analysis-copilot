@@ -393,9 +393,6 @@ export function AnalysisClient({ query }: Props) {
           <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
             <div className="rounded-[28px] border border-white/70 bg-panel p-8 shadow-card">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="rounded-full bg-[#f5e3d5] px-4 py-2 text-sm font-semibold text-accent">
-                  {analysis.mode === "mock" ? text.common.mock : text.common.live}
-                </span>
                 <span className="rounded-full bg-[#f2eadf] px-4 py-2 text-sm font-semibold text-navy">
                   {analysis.businessModelType}
                 </span>
