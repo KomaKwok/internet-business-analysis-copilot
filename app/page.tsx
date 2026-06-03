@@ -50,7 +50,7 @@ export default function HomePage() {
                   {isZh ? "输出结果" : "Output"}
                 </p>
                 <p className="mt-3 text-lg font-semibold leading-8 text-accent">
-                  {isZh ? "适合面试展示的分析面板" : "Interview-ready analysis dashboard"}
+                  {isZh ? "可用于投研判断的分析工作台" : "Investment research analysis workspace"}
                 </p>
               </div>
             </div>
