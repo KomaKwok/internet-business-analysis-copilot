@@ -5,3 +5,7 @@ node_modules
 dist
 coverage
 *.log
+.agent-memory.json
+scripts/agent-memory.json
+tsconfig.tsbuildinfo
+*.rar

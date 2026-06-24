@@ -5,7 +5,7 @@ export function buildAnalysisPrompt(params: {
   companyName: string;
   ticker: string;
   competitors: string[];
-  financialSnapshot: FinancialSnapshot;
+  financialSnapshot: FinancialSnapshot | null;
   sources: SourceLink[];
   locale: Locale;
 }) {
@@ -16,7 +16,9 @@ export function buildAnalysisPrompt(params: {
     )
     .join("\n\n");
 
-  const financialText = JSON.stringify(params.financialSnapshot, null, 2);
+  const financialText = params.financialSnapshot
+    ? JSON.stringify(params.financialSnapshot, null, 2)
+    : "No reliable financial feed is available. Extract every financial figure from the web sources below instead.";
 
   const system = `
 You are an internet business analyst, not a generic summarizer.
@@ -37,6 +39,9 @@ Rules:
 - Separate facts from assumptions.
 - Do not invent numerical data.
 - If a number is unavailable, write "Needs verification".
+- For the "financials" block, extract figures ONLY from the sources or the financial feed. Use absolute USD numbers, not text (e.g. 61750000000, never "61.75B" or "617.5亿"). Use null for any figure not found. Do not guess.
+- ALL figures in "financials" must be in US dollars. "revenue" is TOTAL company revenue for the most recent FULL fiscal year (not a quarter, not a single segment), expressed in USD. If a source reports in another currency, give the USD figure. Prefer a full-year number; give your best figure rather than null unless you have no basis at all.
+- "marketCap" and "currentPrice" must be consistent with "dilutedShares" (marketCap ≈ currentPrice × dilutedShares).
 - Keep every search-based factual claim traceable to source URLs.
 - Avoid vague consultant language.
 - Be causal and commercially grounded.
@@ -45,7 +50,7 @@ Rules:
 `;
 
   const user = `
-Analyze ${params.companyName} (${params.ticker}) for an interview-style internet business analysis dashboard.
+Analyze ${params.companyName} (${params.ticker}) for an internet business analysis dashboard.
 
 Financial snapshot:
 ${financialText}
@@ -65,6 +70,17 @@ Return JSON with this shape:
     "mainUserGroups": string[],
     "revenueSegments": string[],
     "summary": string
+  },
+  "financials": {
+    "revenue": number | null,
+    "marketCap": number | null,
+    "currentPrice": number | null,
+    "dilutedShares": number | null,
+    "netCashOrDebt": number | null,
+    "freeCashFlow": number | null,
+    "operatingMargin": number | null,
+    "fiscalYear": string,
+    "revenueHistory": [{ "year": number, "revenue": number }]
   },
   "user": { "facts": string[], "assumptions": string[] },
   "useCase": { "facts": string[], "assumptions": string[] },
@@ -96,7 +112,7 @@ Return JSON with this shape:
     "keyMetric": string,
     "bottleneck": string,
     "managementFocus": string,
-    "interviewAngle": string,
+    "coreQuestion": string,
     "verificationNeeds": string[]
   }
 }

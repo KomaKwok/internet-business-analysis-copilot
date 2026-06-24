@@ -1,12 +1,13 @@
 "use client";
 
 import { useLanguage } from "@/components/language-provider";
+import { AgentPanel } from "@/components/agent-panel";
 import { buildValuation } from "@/lib/analysis/valuation";
 import { getCopy } from "@/lib/copy";
-import { AssumptionSet, CompanyAnalysis, CompetitorRow, FinancialSnapshot } from "@/lib/types";
-import { cn, formatCompactNumber, formatMoney } from "@/lib/utils";
+import { AssumptionSet, CompanyAnalysis, FinancialSnapshot, ValuationOutput } from "@/lib/types";
+import { cn, formatCompactNumber, formatMoney, formatPercent } from "@/lib/utils";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Fragment, FormEvent, useEffect, useMemo, useState } from "react";
 
 type Props = {
   query: string;
@@ -20,7 +21,7 @@ const initialAssumptions: AssumptionSet = {
   userGrowth: 0.12,
   arpuGrowth: 0.05,
   takeRateChange: 0.01,
-  marketingExpenseRatio: 0.18
+  reinvestmentRate: 0.2
 };
 
 function SectionTitle({ title }: { title: string }) {
@@ -134,33 +135,123 @@ function getHeatColor(value: number, min: number, max: number) {
   return `rgb(${red}, ${green}, ${blue})`;
 }
 
-function buildCompetitorTableRows(baseAnalysis: CompanyAnalysis, competitors: string[]): CompetitorRow[] {
-  if (!competitors.length) {
-    return baseAnalysis.competitorBenchmark;
-  }
-
-  const existing = new Map(
-    baseAnalysis.competitorBenchmark.map((row) => [row.company.toUpperCase(), row] as const)
+function DataModeBanner({
+  mode,
+  text
+}: {
+  mode: "mock" | "live";
+  text: ReturnType<typeof getCopy>;
+}) {
+  const isMock = mode === "mock";
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-3 rounded-[24px] border p-5 shadow-sm",
+        isMock ? "border-[#e6c79a] bg-[#fdf3e2]" : "border-[#bcdcc4] bg-[#eef8f0]"
+      )}
+    >
+      <span
+        className={cn(
+          "mt-0.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em]",
+          isMock ? "bg-[#e6a23c] text-white" : "bg-[#2f8a4e] text-white"
+        )}
+      >
+        {isMock ? text.common.mock : text.common.live}
+      </span>
+      <div>
+        <p className="text-sm font-semibold text-navy">
+          {isMock ? text.common.dataModeMockTitle : text.common.dataModeLiveTitle}
+        </p>
+        <p className="mt-1 text-sm leading-6 text-steel">
+          {isMock ? text.common.dataModeMockBody : text.common.dataModeLiveBody}
+        </p>
+      </div>
+    </div>
   );
+}
 
-  return competitors.map((name, index) => {
-    const hit = existing.get(name.toUpperCase());
-    if (hit) {
-      return hit;
-    }
+function VerdictHero({
+  valuation,
+  assumptions,
+  text
+}: {
+  valuation: ValuationOutput;
+  assumptions: AssumptionSet;
+  text: ReturnType<typeof getCopy>;
+}) {
+  const hasCall =
+    valuation.verdict !== "unknown" &&
+    valuation.upsideDownside !== null &&
+    valuation.marketEquity !== null;
+  const isUp = (valuation.upsideDownside ?? 0) >= 0;
+  const tone =
+    valuation.verdict === "undervalued"
+      ? { bg: "bg-[#eef8f0]", border: "border-[#bcdcc4]", chip: "bg-[#2f8a4e]", value: "text-[#2f8a4e]" }
+      : valuation.verdict === "overvalued"
+        ? { bg: "bg-[#fdeeea]", border: "border-[#efc7c0]", chip: "bg-[#b55233]", value: "text-[#b55233]" }
+        : { bg: "bg-[#fffaf3]", border: "border-[#eadfce]", chip: "bg-[#8a6d3b]", value: "text-navy" };
 
-    return {
-      company: name,
-      coreBusiness: index === 0 ? "综合平台 / 电商生态" : "平台或零售相关业务",
-      userBase: index === 0 ? "大盘消费者与商家" : "高频或细分用户群",
-      revenueModel: "广告、佣金、服务费",
-      monetizationMethod: "商家投放、抽成、服务收费",
-      competitiveAdvantage: "品牌、供给或生态协同",
-      weakness: "需要进一步核实",
-      keyRisk: "竞争压力或利润率波动",
-      metricToWatch: "收入增速 / 变现效率"
-    };
-  });
+  const stats = [
+    { label: text.company.currentPriceLabel, value: formatMoney(valuation.marketEquity ?? undefined) },
+    { label: text.company.modelValueLabel, value: formatMoney(valuation.equityValue) },
+    {
+      label: isUp ? text.company.upsideLabel : text.company.downsideLabel,
+      value: formatPercent(valuation.upsideDownside, true),
+      emphasize: true
+    },
+    { label: text.company.impliedGrowthLabel, value: formatPercent(valuation.marketImpliedGrowth) }
+  ];
+
+  return (
+    <section className={cn("rounded-[30px] border p-8 shadow-card", tone.bg, tone.border)}>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent">
+            {text.company.verdictTitle}
+          </p>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-steel">{text.company.verdictSubtitle}</p>
+        </div>
+        <span
+          className={cn(
+            "rounded-full px-5 py-2 text-sm font-semibold uppercase tracking-[0.1em] text-white",
+            tone.chip
+          )}
+        >
+          {text.company.verdictLabels[valuation.verdict]}
+        </span>
+      </div>
+
+      {hasCall ? (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat) => (
+            <div key={stat.label} className="rounded-[22px] bg-white/80 p-5 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.12em] text-steel">{stat.label}</p>
+              <p className={cn("mt-3 break-all text-2xl font-semibold", stat.emphasize ? tone.value : "text-navy")}>
+                {stat.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : valuation.marketEquity !== null ? (
+        <div className="mt-6 inline-block rounded-[22px] bg-white/80 p-5 shadow-sm">
+          <p className="text-xs uppercase tracking-[0.12em] text-steel">{text.company.currentPriceLabel}</p>
+          <p className="mt-3 break-all text-2xl font-semibold text-navy">
+            {formatMoney(valuation.marketEquity)}
+          </p>
+        </div>
+      ) : null}
+
+      <p className="mt-6 rounded-[22px] border border-dashed border-[#dfcbb8] bg-white/70 p-5 text-base leading-8 text-navy">
+        {hasCall
+          ? text.company.verdictNarrative({
+              gap: formatPercent(valuation.upsideDownside, true),
+              impliedGrowth: formatPercent(valuation.marketImpliedGrowth),
+              baseGrowth: formatPercent(assumptions.revenueGrowth)
+            })
+          : text.company.verdictNoPrice}
+      </p>
+    </section>
+  );
 }
 
 function SnapshotPanel({
@@ -301,12 +392,7 @@ export function AnalysisClient({ query }: Props) {
     return buildValuation(analysis.financialSnapshot, assumptions);
   }, [analysis, assumptions]);
 
-  const competitorRows = useMemo(() => {
-    if (!analysis) {
-      return [];
-    }
-    return buildCompetitorTableRows(analysis, competitors);
-  }, [analysis, competitors]);
+  const competitorRows = analysis?.competitorBenchmark ?? [];
 
   const xValues = useMemo(
     () =>
@@ -390,12 +476,15 @@ export function AnalysisClient({ query }: Props) {
 
       {!loading && analysis && valuation ? (
         <div className="space-y-8">
+          <DataModeBanner mode={analysis.mode} text={text} />
+
+          <VerdictHero valuation={valuation} assumptions={assumptions} text={text} />
+
+          <AgentPanel query={query} />
+
           <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
             <div className="rounded-[28px] border border-white/70 bg-panel p-8 shadow-card">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="rounded-full bg-[#f5e3d5] px-4 py-2 text-sm font-semibold text-accent">
-                  {analysis.mode === "mock" ? text.common.mock : text.common.live}
-                </span>
                 <span className="rounded-full bg-[#f2eadf] px-4 py-2 text-sm font-semibold text-navy">
                   {analysis.businessModelType}
                 </span>
@@ -583,7 +672,7 @@ export function AnalysisClient({ query }: Props) {
               <SectionTitle title={text.company.valuationTitle} />
               <div className="mb-6 grid gap-4 md:grid-cols-2">
                 <RangeInput
-                  label="Revenue growth"
+                  label={locale === "zh" ? "收入增速" : "Revenue growth"}
                   value={assumptions.revenueGrowth}
                   min={0.02}
                   max={0.4}
@@ -591,7 +680,7 @@ export function AnalysisClient({ query }: Props) {
                   onChange={(value) => setAssumptions((current) => ({ ...current, revenueGrowth: value }))}
                 />
                 <RangeInput
-                  label="Operating margin"
+                  label={locale === "zh" ? "营业利润率" : "Operating margin"}
                   value={assumptions.operatingMargin}
                   min={0.05}
                   max={0.4}
@@ -599,7 +688,7 @@ export function AnalysisClient({ query }: Props) {
                   onChange={(value) => setAssumptions((current) => ({ ...current, operatingMargin: value }))}
                 />
                 <RangeInput
-                  label="Discount rate"
+                  label={locale === "zh" ? "折现率" : "Discount rate"}
                   value={assumptions.discountRate}
                   min={0.06}
                   max={0.18}
@@ -607,13 +696,13 @@ export function AnalysisClient({ query }: Props) {
                   onChange={(value) => setAssumptions((current) => ({ ...current, discountRate: value }))}
                 />
                 <RangeInput
-                  label="Marketing expense ratio"
-                  value={assumptions.marketingExpenseRatio}
+                  label={locale === "zh" ? "再投资率" : "Reinvestment rate"}
+                  value={assumptions.reinvestmentRate}
                   min={0.05}
-                  max={0.35}
+                  max={0.5}
                   step={0.01}
                   onChange={(value) =>
-                    setAssumptions((current) => ({ ...current, marketingExpenseRatio: value }))
+                    setAssumptions((current) => ({ ...current, reinvestmentRate: value }))
                   }
                 />
               </div>
@@ -688,9 +777,8 @@ export function AnalysisClient({ query }: Props) {
                     ))}
 
                     {yValues.map((y) => (
-                      <>
+                      <Fragment key={`row-${y}`}>
                         <div
-                          key={`row-${y}`}
                           className="flex items-center justify-center rounded-2xl bg-[#f6ecdf] px-3 py-4 text-center text-lg font-semibold text-navy"
                         >
                           {y}%
@@ -725,7 +813,7 @@ export function AnalysisClient({ query }: Props) {
                             </div>
                           );
                         })}
-                      </>
+                      </Fragment>
                     ))}
                   </div>
                 </div>
@@ -786,7 +874,7 @@ export function AnalysisClient({ query }: Props) {
                 ))}
               </div>
               <div className="mt-4 rounded-[22px] border border-dashed border-[#dfcbb8] bg-[#fffdfa] p-5 text-base leading-8 text-navy">
-                {analysis.strategicDiagnosis.interviewAngle}
+                {analysis.strategicDiagnosis.coreQuestion}
               </div>
               <div className="mt-4 rounded-[22px] bg-[#fffaf3] p-5">
                 <p className="text-xs uppercase tracking-[0.12em] text-accent">

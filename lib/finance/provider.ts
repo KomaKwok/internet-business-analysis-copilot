@@ -89,6 +89,10 @@ async function getYahooSnapshot(ticker: string): Promise<FinanceResult> {
     ticker,
     financialSnapshot: {
       marketCap: pickRaw(result?.price?.marketCap),
+      currentPrice:
+        typeof marketPrice === "number"
+          ? marketPrice
+          : pickRaw(result?.financialData?.currentPrice),
       revenue: pickRaw(result?.financialData?.totalRevenue),
       grossMargin: pickRaw(result?.financialData?.grossMargins),
       operatingMargin: pickRaw(result?.financialData?.operatingMargins),
@@ -98,8 +102,7 @@ async function getYahooSnapshot(ticker: string): Promise<FinanceResult> {
         (pickRaw(result?.financialData?.totalDebt) || 0),
       dilutedShares: pickRaw(result?.defaultKeyStatistics?.sharesOutstanding),
       fiscalYear: result?.price?.exchangeName || "Needs verification",
-      revenueHistory: annualSeries.reverse(),
-      ...(marketPrice ? { marketCap: pickRaw(result?.price?.marketCap) } : {})
+      revenueHistory: annualSeries.reverse()
     }
   };
 }

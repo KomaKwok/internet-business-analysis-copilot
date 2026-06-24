@@ -1,5 +1,6 @@
 import { Locale } from "@/components/language-provider";
-import { AssumptionSet, CompanyAnalysis } from "@/lib/types";
+import { AssumptionSet, CompanyAnalysis, FinancialSnapshot } from "@/lib/types";
+import { buildValuation } from "@/lib/analysis/valuation";
 
 const defaultAssumptions: AssumptionSet = {
   revenueGrowth: 0.18,
@@ -9,63 +10,8 @@ const defaultAssumptions: AssumptionSet = {
   userGrowth: 0.12,
   arpuGrowth: 0.05,
   takeRateChange: 0.01,
-  marketingExpenseRatio: 0.18
+  reinvestmentRate: 0.2
 };
-
-function buildMockValuation(assumptions: AssumptionSet) {
-  const baseRevenue = 36_000_000_000;
-  const forecast = Array.from({ length: 5 }, (_, index) => {
-    const year = 2026 + index;
-    const revenue = baseRevenue * Math.pow(1 + assumptions.revenueGrowth, index + 1);
-    const operatingIncome = revenue * assumptions.operatingMargin;
-    const freeCashFlow = operatingIncome * 0.78;
-    return { year, revenue, operatingIncome, freeCashFlow };
-  });
-
-  const pv = forecast.reduce((sum, point, index) => {
-    return sum + point.freeCashFlow / Math.pow(1 + assumptions.discountRate, index + 1);
-  }, 0);
-  const terminalBase = forecast[forecast.length - 1].freeCashFlow;
-  const terminalValue =
-    terminalBase * (1 + assumptions.terminalGrowth) /
-    Math.max(assumptions.discountRate - assumptions.terminalGrowth, 0.01);
-  const terminalPv = terminalValue / Math.pow(1 + assumptions.discountRate, forecast.length);
-  const enterpriseValue = pv + terminalPv;
-  const equityValue = enterpriseValue + 4_000_000_000;
-  const dilutedShares = 1_850_000_000;
-
-  const sensitivity = [-0.04, -0.02, 0, 0.02, 0.04].flatMap((growthDelta) =>
-    [-0.02, -0.01, 0, 0.01, 0.02].map((discountDelta) => {
-      const growth = assumptions.revenueGrowth + growthDelta;
-      const discount = assumptions.discountRate + discountDelta;
-      const localForecast = Array.from({ length: 5 }, (_, index) => {
-        const revenue = baseRevenue * Math.pow(1 + growth, index + 1);
-        return revenue * assumptions.operatingMargin * 0.78;
-      });
-      const localPv = localForecast.reduce((sum, fcf, index) => {
-        return sum + fcf / Math.pow(1 + discount, index + 1);
-      }, 0);
-      const localTv =
-        localForecast[localForecast.length - 1] * (1 + assumptions.terminalGrowth) /
-        Math.max(discount - assumptions.terminalGrowth, 0.01);
-      const localEv = localPv + localTv / Math.pow(1 + discount, 5);
-      return {
-        x: Number(((growth || 0) * 100).toFixed(1)),
-        y: Number((discount * 100).toFixed(1)),
-        value: localEv / dilutedShares
-      };
-    })
-  );
-
-  return {
-    currency: "USD",
-    equityValue,
-    enterpriseValue,
-    valuePerShare: equityValue / dilutedShares,
-    forecast,
-    sensitivity
-  };
-}
 
 export function getMockAnalysis(
   query: string,
@@ -140,6 +86,23 @@ export function getMockAnalysis(
           ? "Merchant monetization growth"
           : "Order frequency / margin"
   }));
+
+  const financialSnapshot: FinancialSnapshot = {
+    marketCap: 145_000_000_000,
+    currentPrice: 145_000_000_000 / 1_850_000_000,
+    revenue: 36_000_000_000,
+    operatingMargin: 0.16,
+    freeCashFlow: 4_500_000_000,
+    netCashOrDebt: 4_000_000_000,
+    dilutedShares: 1_850_000_000,
+    fiscalYear: "2025",
+    revenueHistory: [
+      { year: 2022, revenue: 18_000_000_000 },
+      { year: 2023, revenue: 24_000_000_000 },
+      { year: 2024, revenue: 30_000_000_000 },
+      { year: 2025, revenue: 36_000_000_000 }
+    ]
+  };
 
   return {
     generatedAt: new Date().toISOString(),
@@ -279,15 +242,15 @@ export function getMockAnalysis(
       biggestUncertainty: zh ? "变现提升究竟是结构性改善还是补贴驱动" : "Whether monetization gains are structural or subsidy-driven",
       managementQuestion: zh ? "最近的收入增长中，有多少来自 ROI 工具改善，而不是更高广告负载？" : "How much of recent revenue growth came from better ROI tools versus higher ad load?"
     },
-    valuation: buildMockValuation(assumptions),
+    valuation: buildValuation(financialSnapshot, assumptions),
     strategicDiagnosis: {
       currentGrowthDriver: zh ? "在现有流量基础上提升变现效率" : "Monetization expansion on top of existing traffic",
       keyMetric: zh ? "GMV 到收入的转化效率" : "GMV to revenue conversion efficiency",
       bottleneck: zh ? "新增用户质量和上升的获客成本" : "Incremental user quality and rising acquisition cost",
       managementFocus: zh ? "在提升商家 ROI 的同时稳住复购行为" : "Protect repeat purchase behavior while lifting merchant ROI",
-      interviewAngle: zh
-        ? "面试里真正值得讲的不是单纯用户增长，而是平台能否在不伤害商家回报的前提下继续提升变现。"
-        : "The economic question is not just user growth. It is whether the platform can compound monetization without damaging merchant returns.",
+      coreQuestion: zh
+        ? "真正决定结果的不是单纯的用户增长，而是平台能否在不伤害商家回报的前提下继续提升变现。"
+        : "The question that decides the outcome is not user growth, but whether the platform can compound monetization without damaging merchant returns.",
       verificationNeeds: zh
         ? ["最近分部披露", "平台 Take Rate 趋势", "营销费用占收入比"]
         : [
@@ -297,20 +260,6 @@ export function getMockAnalysis(
           ]
     },
     sources: [{ title: "Mock mode placeholder", url: "https://example.com/mock-mode", publisher: "Local" }],
-    financialSnapshot: {
-      marketCap: 145_000_000_000,
-      revenue: 36_000_000_000,
-      operatingMargin: 0.16,
-      freeCashFlow: 4_500_000_000,
-      netCashOrDebt: 4_000_000_000,
-      dilutedShares: 1_850_000_000,
-      fiscalYear: "2025",
-      revenueHistory: [
-        { year: 2022, revenue: 18_000_000_000 },
-        { year: 2023, revenue: 24_000_000_000 },
-        { year: 2024, revenue: 30_000_000_000 },
-        { year: 2025, revenue: 36_000_000_000 }
-      ]
-    }
+    financialSnapshot
   };
 }

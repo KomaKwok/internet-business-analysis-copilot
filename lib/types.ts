@@ -53,8 +53,11 @@ export type AssumptionSet = {
   userGrowth: number;
   arpuGrowth: number;
   takeRateChange: number;
-  marketingExpenseRatio: number;
+  /** Capex + working capital invested per $1 of incremental revenue. Drives FCF. */
+  reinvestmentRate: number;
 };
+
+export type ValuationVerdict = "undervalued" | "fair" | "overvalued" | "unknown";
 
 export type ValuationSeriesPoint = {
   year: number;
@@ -74,6 +77,15 @@ export type ValuationOutput = {
   equityValue: number;
   enterpriseValue: number;
   valuePerShare: number | null;
+  /** Current traded price (display only; may be noisy for ADRs). */
+  currentPrice: number | null;
+  /** Total market cap — the comparison anchor for the verdict. */
+  marketEquity: number | null;
+  /** modelEquityValue / marketCap - 1. Positive = model says undervalued. */
+  upsideDownside: number | null;
+  /** Revenue growth the current market cap implies, holding other assumptions fixed. */
+  marketImpliedGrowth: number | null;
+  verdict: ValuationVerdict;
   forecast: ValuationSeriesPoint[];
   sensitivity: SensitivityCell[];
 };
@@ -83,12 +95,13 @@ export type StrategicDiagnosis = {
   keyMetric: string;
   bottleneck: string;
   managementFocus: string;
-  interviewAngle: string;
+  coreQuestion: string;
   verificationNeeds: string[];
 };
 
 export type FinancialSnapshot = {
   marketCap?: number;
+  currentPrice?: number;
   revenue?: number;
   grossMargin?: number;
   operatingMargin?: number;

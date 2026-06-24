@@ -23,6 +23,15 @@ export function formatCompactNumber(value?: number) {
   }).format(value);
 }
 
+export function formatPercent(value?: number | null, withSign = false) {
+  if (value === undefined || value === null || Number.isNaN(value)) {
+    return "Needs verification";
+  }
+  const pct = value * 100;
+  const sign = withSign && pct > 0 ? "+" : "";
+  return `${sign}${pct.toFixed(1)}%`;
+}
+
 export function normalizeTicker(input: string) {
   return input.trim().replace(/\s+/g, "").toUpperCase();
 }

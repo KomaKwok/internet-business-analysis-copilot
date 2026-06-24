@@ -11,6 +11,10 @@ type CopyShape = {
     live: string;
     apply: string;
     applied: string;
+    dataModeMockTitle: string;
+    dataModeMockBody: string;
+    dataModeLiveTitle: string;
+    dataModeLiveBody: string;
   };
   home: {
     badge: string;
@@ -32,9 +36,30 @@ type CopyShape = {
     intro: string;
     sections: Array<{ title: string; text: string }>;
   };
+  designRationale: {
+    badge: string;
+    title: string;
+    intro: string;
+    decisionLabel: string;
+    whyLabel: string;
+    rejectedLabel: string;
+    decisions: Array<{ decision: string; why: string; rejected: string }>;
+    closingTitle: string;
+    closingBody: string;
+  };
   company: {
     dashboardTitle: string;
     subtitle: string;
+    verdictTitle: string;
+    verdictSubtitle: string;
+    currentPriceLabel: string;
+    modelValueLabel: string;
+    upsideLabel: string;
+    downsideLabel: string;
+    impliedGrowthLabel: string;
+    verdictLabels: Record<"undervalued" | "fair" | "overvalued" | "unknown", string>;
+    verdictNarrative: (args: { gap: string; impliedGrowth: string; baseGrowth: string }) => string;
+    verdictNoPrice: string;
     competitors: string;
     competitorsPlaceholder: string;
     competitorsHint: string;
@@ -82,24 +107,30 @@ const copy: Record<Locale, CopyShape> = {
       mock: "mock",
       live: "live",
       apply: "Apply",
-      applied: "Applied"
+      applied: "Applied",
+      dataModeMockTitle: "Demo data",
+      dataModeMockBody:
+        "No live API keys are configured, so the numbers below are illustrative defaults — not the real filings.",
+      dataModeLiveTitle: "Live, search-backed",
+      dataModeLiveBody:
+        "Qualitative analysis is generated from live web sources. The valuation is a simplified DCF, not investment advice."
     },
     home: {
-      badge: "Portfolio project",
+      badge: "Internet business analysis platform",
       title: "Internet Business Analysis Copilot",
       intro:
-        "Analyze internet companies through the operating logic that actually matters: users, use cases, monetization, KPI formulas, competitive pressure, valuation sensitivity, and management questions.",
+        "Analyze internet companies the way an operator or investor actually would: reason through users, use cases, monetization, KPI formulas, competition, and a valuation that ends in an actual call — not a generic summary.",
       tryLabel: "Try: PDD, BABA, UBER, NFLX, SPOT, DASH",
       cards: ["Business model", "Competition", "Valuation"],
       cardBodies: [
         "Breaks revenue into the true economic drivers: users, ARPU, GMV, take rate, ad load, frequency, and retention.",
         "Benchmarks the company against peers on monetization structure, moat, weakness, and the one metric worth monitoring.",
-        "Links the narrative to a live operating model so you can talk about growth, margin, and strategic bottlenecks in one frame."
+        "Links the narrative to an operating model so growth, margin, and strategic bottlenecks can be judged in one frame."
       ],
       methodologyTitle: "Methodology",
       methodologyBody:
-        "Facts and assumptions are separated. Search-backed claims keep source URLs. Missing numbers are explicitly flagged for follow-up verification.",
-      methodologyCta: "View method"
+        "Qualitative analysis is generated live from web sources with URLs. Annual revenue is pulled straight from SEC EDGAR filings, and the valuation is a transparent, simplified DCF — facts and assumptions stay clearly separated.",
+      methodologyCta: "How it works"
     },
     search: {
       placeholder: "Enter ticker or company, e.g. PDD, UBER, NFLX",
@@ -108,7 +139,7 @@ const copy: Record<Locale, CopyShape> = {
     methodology: {
       title: "Methodology",
       intro:
-        "This product is designed for analyst interviews, so the analysis is organized around the company's economic engine rather than a generic summary.",
+        "This product is designed for business analysis, so the output is organized around the company's economic engine rather than a generic summary.",
       sections: [
         {
           title: "User",
@@ -125,13 +156,89 @@ const copy: Record<Locale, CopyShape> = {
         {
           title: "Strategic diagnosis",
           text: "The final output asks what could break the growth story instead of stopping at a descriptive company overview."
+        },
+        {
+          title: "Data sources",
+          text: "Qualitative analysis comes from live web search plus an LLM, with source URLs. Annual revenue is read directly from SEC EDGAR XBRL filings; market cap is extracted from sources. The valuation is a transparent, simplified DCF, not investment advice."
         }
       ]
+    },
+    designRationale: {
+      badge: "How it works",
+      title: "The analytical approach",
+      intro:
+        "Most AI tools hand you a fluent summary. This one is opinionated on purpose: every section reflects a deliberate choice about what matters, what to trust, and when to stay silent. Here is each principle, the reasoning behind it, and the easier approach it deliberately avoids.",
+      decisionLabel: "Principle",
+      whyLabel: "Why",
+      rejectedLabel: "Why not the alternative",
+      decisions: [
+        {
+          decision:
+            "Every company runs through a causal chain — users → monetization → KPIs → competition → valuation → diagnosis — not a free-form summary.",
+          why: "The value of analysis is causation and judgment, not a tidy description. A frame that can answer 'what would break the growth story' is worth far more than a perfect company encyclopedia entry.",
+          rejected:
+            "A polished AI overview. It reads well but contains no falsifiable judgment — a pretty deck, not analysis."
+        },
+        {
+          decision: "Every dimension separates observed facts from analyst assumptions.",
+          why: "The most common analytical error is presenting an assumption as a fact. The split forces a clear line between what is known and what is being inferred — and the judgment lives in the assumptions column.",
+          rejected:
+            "A single blended narrative. The reader can't gauge confidence or challenge any specific claim."
+        },
+        {
+          decision:
+            "Revenue is decomposed into unit economics — GMV × take rate, paid users × ARPU, active users × time × ad load × CPM — not a single growth number.",
+          why: "The same 20% revenue growth means very different things if it comes from price, volume, or monetization. Only by breaking it into drivers can you judge the quality and durability of growth.",
+          rejected:
+            "Tracking headline 'revenue growth' alone. It hides whether growth is structural or borrowed."
+        },
+        {
+          decision:
+            "Valuation is a reverse-DCF: rather than a price target, it shows the growth the current market cap implies, so you can take a side.",
+          why: "Any point valuation is hostage to its assumptions. The useful question is 'what is the market paying for?' — which reframes the call as 'more or less optimistic than the market, and why.'",
+          rejected:
+            "A single precise target price. That is false precision dressed up as rigor."
+        },
+        {
+          decision:
+            "When the data isn't reliable, the tool says 'insufficient data' instead of fabricating an over/undervalued call.",
+          why: "Knowing the limits of an analysis matters. A tool that stays quiet when it isn't sure is more trustworthy than one that is always confident.",
+          rejected:
+            "Always returning a verdict. A confidently wrong call destroys credibility faster than an honest 'not enough data.'"
+        },
+        {
+          decision:
+            "Each input takes its most reliable source: revenue from SEC EDGAR filings, qualitative analysis from live search, and the call compares equity value to market cap rather than price-per-share.",
+          why: "LLM-extracted revenue proved unreliable (quarter vs. year, currency mix-ups), while per-share price and share counts hit a share-class trap for ADRs. So each number takes its most trustworthy path, and the comparison sidesteps the fragile data entirely.",
+          rejected:
+            "Trusting one source — or the LLM — for everything and hoping the numbers line up."
+        }
+      ],
+      closingTitle: "Scope and limits",
+      closingBody:
+        "This is a decision-support tool, not investment advice. Its job is not to hand you a verdict, but to enforce a structured, falsifiable, and honest read of a business — and to be explicit wherever the underlying data is uncertain."
     },
     company: {
       dashboardTitle: "Analysis Dashboard",
       subtitle:
         "This dashboard decomposes the company into user, product, revenue engine, KPI stack, valuation sensitivity, and strategic risks.",
+      verdictTitle: "The Call",
+      verdictSubtitle: "Where the simplified DCF equity value lands versus the company's market cap.",
+      currentPriceLabel: "Market cap",
+      modelValueLabel: "Model equity value",
+      upsideLabel: "Implied upside",
+      downsideLabel: "Implied downside",
+      impliedGrowthLabel: "Market-implied growth",
+      verdictLabels: {
+        undervalued: "Model says UNDERVALUED",
+        fair: "Roughly FAIRLY VALUED",
+        overvalued: "Model says OVERVALUED",
+        unknown: "Insufficient data"
+      },
+      verdictNarrative: ({ gap, impliedGrowth, baseGrowth }) =>
+        `Under your assumptions the model lands ${gap} versus the market. To justify today's price the market is betting on ~${impliedGrowth} revenue growth, against the ${baseGrowth} you set — the gap between those two numbers is the real debate.`,
+      verdictNoPrice:
+        "Not enough reliable financial data (price or annual revenue) was found to make a valuation call. The qualitative analysis below still holds.",
       competitors: "Optional competitors",
       competitorsPlaceholder: "e.g. BABA, JD",
       competitorsHint:
@@ -201,24 +308,30 @@ const copy: Record<Locale, CopyShape> = {
       mock: "模拟",
       live: "实时",
       apply: "应用竞对",
-      applied: "已应用"
+      applied: "已应用",
+      dataModeMockTitle: "演示数据",
+      dataModeMockBody:
+        "当前未配置实时 API key，下面的数字是示意默认值，不代表真实财报。",
+      dataModeLiveTitle: "实时 · 来源支撑",
+      dataModeLiveBody:
+        "定性分析基于实时网络来源生成；估值是简化 DCF，不构成投资建议。"
     },
     home: {
-      badge: "作品集项目",
+      badge: "互联网商业分析平台",
       title: "互联网商业分析 Copilot",
       intro:
-        "用真正决定结果的经营逻辑来分析互联网公司：用户是谁、需求是什么、怎么变现、关键 KPI 怎么拆、竞争压力来自哪里，以及估值对哪些经营变量最敏感。",
+        "像真正的从业者或投资人那样分析互联网公司：把用户、需求、变现、KPI 公式、竞争一路推下来，最后落到一个明确判断——而不是又一份泛泛的公司介绍。",
       tryLabel: "可尝试：PDD、BABA、UBER、NFLX、SPOT、DASH",
       cards: ["商业模式", "竞争格局", "估值框架"],
       cardBodies: [
         "把收入拆回真实驱动因子：用户数、ARPU、GMV、Take Rate、广告负载、频次和留存。",
         "把公司和竞对放到同一张表里比较：变现结构、护城河、弱点，以及最值得盯的经营指标。",
-        "把业务叙事和经营模型连起来，方便你在面试里同时讲增长、利润率和战略瓶颈。"
+        "把业务叙事和经营模型连起来，帮助判断增长、利润率和战略瓶颈是否匹配。"
       ],
       methodologyTitle: "方法框架",
       methodologyBody:
-        "事实和判断分开展示；搜索得出的结论保留来源 URL；缺失数字不会硬编，而是明确标记为后续需要核实。",
-      methodologyCta: "查看方法"
+        "定性分析基于实时网络来源生成并保留来源 URL；年度收入直接取自 SEC EDGAR 官方财报；估值是透明的简化 DCF。事实与判断始终分开展示。",
+      methodologyCta: "工作原理"
     },
     search: {
       placeholder: "输入股票代码或公司名，例如 PDD、UBER、NFLX",
@@ -227,7 +340,7 @@ const copy: Record<Locale, CopyShape> = {
     methodology: {
       title: "方法框架",
       intro:
-        "这个产品面向商业分析 / 战略分析面试场景，所以核心不是泛泛公司介绍，而是把公司的经济引擎拆开讲清楚。",
+        "这个产品面向商业分析 / 投研判断场景，所以核心不是泛泛公司介绍，而是把公司的经济引擎拆开讲清楚。",
       sections: [
         {
           title: "用户",
@@ -244,12 +357,87 @@ const copy: Record<Locale, CopyShape> = {
         {
           title: "战略诊断",
           text: "最终输出不是停留在公司概述，而是追问什么因素会破坏增长逻辑。"
+        },
+        {
+          title: "数据来源",
+          text: "定性分析来自实时网络搜索加大模型，并保留来源 URL；年度收入直接读取 SEC EDGAR 财报 XBRL；市值由来源抽取。估值是透明的简化 DCF，不构成投资建议。"
         }
       ]
+    },
+    designRationale: {
+      badge: "工作原理",
+      title: "分析方法",
+      intro:
+        "多数 AI 工具给你一段流畅的总结，这个产品刻意带着观点：每一处都是一个有意识的取舍——什么重要、什么能信、什么时候该闭嘴。下面是每条原则、背后的理由，以及它刻意避开的那个更省事的做法。",
+      decisionLabel: "原则",
+      whyLabel: "为什么",
+      rejectedLabel: "为什么不那样做",
+      decisions: [
+        {
+          decision:
+            "每家公司都走一条因果链——用户 → 变现 → KPI → 竞争 → 估值 → 诊断，而不是自由发挥的总结。",
+          why: "分析的价值在于因果和判断，不在于一段漂亮的描述。一个能回答“增长会被什么打断”的框架，远比一条完美的公司百科词条有用。",
+          rejected:
+            "一段打磨过的 AI 综述。它读起来很顺，但没有任何可证伪的判断——那是漂亮的 PPT，不是分析。"
+        },
+        {
+          decision: "每个维度都把“已确认事实”和“待验证假设”分两栏。",
+          why: "最常见的分析错误，就是把假设当事实讲。强制分栏，等于在“已知”和“推断”之间划一条清晰的线——而判断恰恰体现在假设那一栏。",
+          rejected:
+            "把所有结论混成一段叙述。读者无法分辨可信度，也无法针对某一条来挑战。"
+        },
+        {
+          decision:
+            "把收入拆成单位经济学——GMV×Take Rate、付费用户×ARPU、活跃×时长×广告负载×CPM，而不是只看一个增长数字。",
+          why: "同样 20% 的收入增长，来自涨价、涨量还是涨变现率，故事和可持续性完全不同。只有拆到驱动因子，才能判断增长的质量。",
+          rejected:
+            "只盯“收入增速”这个表层指标。它掩盖了增长到底是结构性的，还是借来的。"
+        },
+        {
+          decision:
+            "估值用反推：不给目标价，而是算出当前市值隐含了多少增速，让你来表态。",
+          why: "任何点估值都被它的假设绑架，单看没意义。真正有用的问题是“市场在为什么买单”——这把判断从“我猜多少”变成“我比市场更乐观还是更悲观、为什么”。",
+          rejected:
+            "一个看似精确的目标价。那是把伪精确伪装成严谨。"
+        },
+        {
+          decision: "数据不可靠时，工具显示“数据不足”，而不是硬编一个高估/低估结论。",
+          why: "知道一份分析的边界很重要。一个没把握时会闭嘴的工具，比一个永远自信的工具更可信。",
+          rejected:
+            "无论如何都给个结论。一个自信的错误结论，比一句诚实的“数据不够”更快毁掉可信度。"
+        },
+        {
+          decision:
+            "每个数据走它最可靠的来源：收入取自 SEC EDGAR 官方财报，定性分析靠实时搜索，结论比“股权价值 vs 市值”而非每股。",
+          why: "实测发现 LLM 抽收入不可靠（季度当年度、币种混淆），而每股股价/股数对中概 ADR 又有股本换算陷阱。所以让每个数字走最可信的路径，并用一个绕开脆弱数据的比较口径。",
+          rejected:
+            "全靠一个数据源、或全靠 LLM 的省事做法，然后祈祷数字能对上。"
+        }
+      ],
+      closingTitle: "适用范围与边界",
+      closingBody:
+        "这是一个辅助决策工具，不构成投资建议。它的职责不是直接给你一个结论，而是强制一套结构化、可证伪、诚实的公司解读——并在底层数据不确定的地方明确标注出来。"
     },
     company: {
       dashboardTitle: "分析面板",
       subtitle: "这个面板把公司拆成用户、产品、收入引擎、KPI 体系、估值敏感性和战略风险。",
+      verdictTitle: "结论",
+      verdictSubtitle: "简化 DCF 算出的股权价值，相对公司市值落在哪里。",
+      currentPriceLabel: "市值",
+      modelValueLabel: "模型股权价值",
+      upsideLabel: "隐含上行空间",
+      downsideLabel: "隐含下行空间",
+      impliedGrowthLabel: "市场隐含增速",
+      verdictLabels: {
+        undervalued: "模型判断：低估",
+        fair: "大致：合理估值",
+        overvalued: "模型判断：高估",
+        unknown: "数据不足"
+      },
+      verdictNarrative: ({ gap, impliedGrowth, baseGrowth }) =>
+        `在你设定的假设下，模型相对市价${gap}。要支撑当前股价，市场大约押注 ${impliedGrowth} 的收入增速，而你设的是 ${baseGrowth}——这两个数字之间的差，才是真正要辩论的地方。`,
+      verdictNoPrice:
+        "没有找到足够可靠的财务数据（股价或年度收入），无法给出估值结论。下面的定性分析依然成立。",
       competitors: "可选竞对",
       competitorsPlaceholder: "例如：BABA, JD",
       competitorsHint:

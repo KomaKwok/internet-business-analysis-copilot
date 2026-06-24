@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         userGrowth: Number(body.assumptions?.userGrowth ?? 0.12),
         arpuGrowth: Number(body.assumptions?.arpuGrowth ?? 0.05),
         takeRateChange: Number(body.assumptions?.takeRateChange ?? 0.01),
-        marketingExpenseRatio: Number(body.assumptions?.marketingExpenseRatio ?? 0.18)
+        reinvestmentRate: Number(body.assumptions?.reinvestmentRate ?? 0.2)
       }
     });
 
