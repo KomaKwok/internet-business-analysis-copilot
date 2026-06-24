@@ -25,16 +25,26 @@ function lessonsBlock(lessons: string[]) {
   return "\n\nLessons learned from past runs — apply them:\n" + lessons.map((l) => `- ${l}`).join("\n");
 }
 
+// Strong, front-loaded language directive — the evidence is in English, so a weak
+// trailing instruction gets ignored. This forces the user-facing output language.
+function langDirective(locale: Locale) {
+  return locale === "zh"
+    ? "请务必用简体中文撰写你的全部回答，包括所有小标题和要点；财务数字、股票代码、专有名词可保留英文/原样。\n\n"
+    : "Write your entire response in English.\n\n";
+}
+
 // 1) PLANNER
-async function planner(ticker: string, lessons: string[]) {
+async function planner(ticker: string, lessons: string[], locale: Locale) {
   const msg = await agentLLM({
     json: true,
     messages: [
       {
         role: "system",
         content:
+          langDirective(locale) +
           'You are the planning agent. Output JSON {"tasks":[{"id":1,"focus":"..."},{"id":2,...},{"id":3,...}]} ' +
           "with 3 tasks covering (a) business model + users + monetization, (b) figures to value it (revenue, price, market cap, shares), (c) competition + risks." +
+          (locale === "zh" ? ' 每个 "focus" 字段必须用简体中文书写。' : "") +
           lessonsBlock(lessons)
       },
       { role: "user", content: `Plan research for ${ticker}.` }
@@ -91,10 +101,10 @@ async function synthesizer(ticker: string, findings: string[], lessons: string[]
       {
         role: "system",
         content:
+          langDirective(locale) +
           "You are the synthesis agent. Write: 1) business model in one line; 2) key growth driver; " +
           "3) valuation read using the figures (revenue, price, market cap, shares; compute a rough P/S if possible); " +
-          "4) verdict — cheap / fair / expensive — with one reason. Clearly separate facts from assumptions; if a number is missing, say so honestly. " +
-          (locale === "zh" ? "Write the analysis in Simplified Chinese." : "Write in English.") +
+          "4) verdict — cheap / fair / expensive — with one reason. Clearly separate facts from assumptions; if a number is missing, say so honestly." +
           lessonsBlock(lessons)
       },
       { role: "user", content: `Company: ${ticker}\n\n${evidence}` }
@@ -141,8 +151,8 @@ async function reviser(ticker: string, analysis: string, issues: string[], findi
       {
         role: "system",
         content:
-          "You are the revision agent. Rewrite the analysis to fix the critic's issues, using ONLY the findings. Keep the same 4-part structure. Do not invent numbers. " +
-          (locale === "zh" ? "Write in Simplified Chinese." : "Write in English.") +
+          langDirective(locale) +
+          "You are the revision agent. Rewrite the analysis to fix the critic's issues, using ONLY the findings. Keep the same 4-part structure. Do not invent numbers." +
           lessonsBlock(lessons)
       },
       {
@@ -175,7 +185,7 @@ export async function orchestrate(ticker: string, locale: Locale, emit: Emit) {
   emit({ type: "memory", lessons });
 
   emit({ type: "phase", label: "planner" });
-  const tasks = await planner(ticker, lessons);
+  const tasks = await planner(ticker, lessons, locale);
   emit({ type: "planner", tasks });
 
   emit({ type: "phase", label: "researchers" });
